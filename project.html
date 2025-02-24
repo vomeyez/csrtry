@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Practical Machine Learning Course Project</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1, h2, h3 { color: #333; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+        code { font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Practical Machine Learning Course Project</h1>
+    <h2>Predicting the manner people exercise</h2>
+    <p><strong>Author:</strong> vomeyez</p>
+    <p><strong>Date:</strong> 23-02-2025</p>
+    
+    <h2>Abstract</h2>
+    <p>This project presents an experiment on prediction of the manner in which people exercise. Data is obtained from commercial gadgets containing accelerometers. A random forest model is used for prediction, achieving an accuracy of 0.99.</p>
+    
+    <h2>Introduction</h2>
+    <p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit, it is now possible to collect a large amount of data about personal activity relatively inexpensively. These devices are part of the quantified self movement, where enthusiasts track their behaviors for health improvements and pattern recognition. This project uses data from accelerometers placed on participants to predict the manner of barbell lifts.</p>
+    
+    <h3>Data Sources</h3>
+    <ul>
+        <li><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">Training Data</a></li>
+        <li><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">Test Data</a></li>
+    </ul>
+    
+    <h3>Data Description</h3>
+    <p>The outcome variable is <em>classe</em>, a factor variable with five levels:</p>
+    <ul>
+        <li>Class A: Correct execution</li>
+        <li>Class B: Throwing the elbows to the front</li>
+        <li>Class C: Lifting the dumbbell only halfway</li>
+        <li>Class D: Lowering the dumbbell only halfway</li>
+        <li>Class E: Throwing the hips to the front</li>
+    </ul>
+    
+    <h2>Data Exploration</h2>
+    <pre><code># Load libraries
+library(readr)
+library(caret)
+library(randomForest)
+
+# Read datasets
+training <- read_csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+testing <- read_csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+
+# Dataset dimensions
+dim(training) # Training dataset size
+dim(testing)  # Testing dataset size
+    </code></pre>
+    
+    <h2>Data Preprocessing</h2>
+    <p>Several variables are removed due to lack of useful information. Variables with more than 85% missing values are also excluded.</p>
+    <pre><code># Remove unnecessary columns
+trainingClean <- training[,-c(1:7)]
+testingClean <- testing[,-c(1:7)]
+
+# Remove columns with too many missing values
+thr <- dim(training)[1] * 0.85
+colArray <- colSums(is.na(trainingClean)) > thr
+trainingClean <- trainingClean[, !colArray]
+testingClean <- testingClean[, !colArray]
+    </code></pre>
+    
+    <h2>Training a Prediction Model</h2>
+    <h3>Partitioning the Dataset</h3>
+    <pre><code># Split data into training and validation sets
+set.seed(24680)
+forTrain <- createDataPartition(trainingClean$classe, p = 0.75, list = FALSE)
+trainSet <- trainingClean[forTrain, ]
+validSet <- trainingClean[-forTrain, ]
+    </code></pre>
+    
+    <h3>Random Forest Model</h3>
+    <pre><code># Train model using 10-fold cross validation
+rForest <- train(classe ~ ., data = trainSet, method = "rf", 
+                 trControl = trainControl(method = "cv", 10), ntree = 200)
+rForest
+    </code></pre>
+    
+    <h3>Validation</h3>
+    <pre><code># Validate model
+valPrediction <- predict(rForest, validSet)
+confValid <- confusionMatrix(valPrediction, factor(validSet$classe))
+confValid
+    </code></pre>
+    
+    <h2>Final Prediction</h2>
+    <pre><code># Predict on test data
+testPrediction <- predict(rForest, testingClean)
+testPrediction
+    </code></pre>
+    
+    <h2>Conclusion</h2>
+    <p>The random forest model was trained with a 10-fold cross-validation, achieving high accuracy. It successfully predicted exercise manner with high precision.</p>
+</body>
+</html>
